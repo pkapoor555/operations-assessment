@@ -12,7 +12,7 @@ data "aws_ami" "amazon_linux" {
   }
 
   filter {
-    name = "architecture"
+    name   = "architecture"
     values = ["x86_64"]
   }
 
@@ -20,15 +20,17 @@ data "aws_ami" "amazon_linux" {
 }
 
 resource "aws_key_pair" "developer" {
+  key_name   = "developer"
   public_key = var.public_key
 }
 
 resource "aws_instance" "machine" {
-  ami = data.aws_ami.amazon_linux.id
-  instance_type = "t3.micro"
-  iam_instance_profile = aws_iam_instance_profile.machine.id
-  key_name = aws_key_pair.developer.key_name
+  ami                         = data.aws_ami.amazon_linux.id
+  instance_type               = "t3.micro"
+  iam_instance_profile        = aws_iam_instance_profile.machine.id
+  key_name                    = aws_key_pair.developer.key_name
   associate_public_ip_address = true
+  user_data                   = templatefile("${path.module}/upload_machine_data.sh", { SYSTEM_NAME = local.system_name })
 
   root_block_device {
     volume_size = 20
@@ -40,7 +42,7 @@ resource "aws_instance" "machine" {
   }
 
   vpc_security_group_ids = [aws_security_group.machine_access.id]
-  user_data_base64 = data.cloudinit_config.init.rendered
+  #user_data_base64 = data.cloudinit_config.init.rendered
 }
 
 resource "aws_security_group" "machine_access" {
@@ -48,26 +50,26 @@ resource "aws_security_group" "machine_access" {
 
   ingress {
     description = "SSH"
-    from_port = 22
-    to_port = 22
-    protocol = "tcp"
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
     cidr_blocks = [
-      "0.0.0.0/0"]
+    "0.0.0.0/0"]
   }
 
   egress {
     from_port = 0
-    to_port = 0
-    protocol = "-1"
+    to_port   = 0
+    protocol  = "-1"
     cidr_blocks = [
-      "0.0.0.0/0"]
+    "0.0.0.0/0"]
   }
 }
 
-data "cloudinit_config" "init" {
-  part {
-    content_type = "text/x-shellscript"
-    content = templatefile("${path.module}/upload_machine_data.sh",{SYSTEM_NAME=local.system_name})
-    filename = "upload_machine_data.sh"
-  }
-}
+#data "cloudinit_config" "init" {
+#part {
+# content_type = "text/x-shellscript"
+#content = templatefile("${path.module}/upload_machine_data.sh", {SYSTEM_NAME = local.system_name})
+#filename = "upload_machine_data.sh"
+#}
+#}
